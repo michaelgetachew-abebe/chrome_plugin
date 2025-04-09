@@ -99,7 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
     // AutoReply elements (only in index.html)
     const autoreplyPage = document.getElementById("autoreply-page")
-    const startBtn = document.getElementById("start-btn")
+    const autoTrackingBtn = document.getElementById("auto-tracking-btn")
+    const manualTrackingBtn = document.getElementById("manual-tracking-btn")
     const statusText = document.getElementById("status")
     const responseBox = document.getElementById("response")
     const chatHistoryLabel = document.getElementById("chat-history-label")
@@ -110,6 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const acceptBtn = document.getElementById("accept-btn")
     const rejectBtn = document.getElementById("reject-btn")
     const loadingSpinnerMain = document.getElementById("loading-spinner-main") // Add this line
+    const startBtn = document.getElementById("start-btn")
   
     // Chat elements (only in chat.html)
     const chatPage = document.getElementById("chat-page")
@@ -141,6 +143,12 @@ document.addEventListener("DOMContentLoaded", () => {
     window.isDarkMode = false
     window.currentSlide = 0
     window.chatHistories = {} // Store chat histories by contact name
+  
+    // Auto tracking state
+    window.isAutoTracking = false
+    window.isManualTracking = false
+    window.autoTrackingInterval = null
+    window.autoTrackingDelay = 120000 // 2 minutes between checks
   
     // Handle logout
     async function handleLogout() {
@@ -268,6 +276,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const spinnerText = spinner.querySelector(".text-sm")
       if (spinnerText) {
         spinnerText.textContent = isRejection ? "Re-processing Rejected response..." : "Generating AI response..."
+      }
+    }
+  
+    // Helper function to update button states
+    function updateTrackingButtonStates() {
+      if (!autoTrackingBtn || !manualTrackingBtn) return
+  
+      if (window.isAutoTracking) {
+        // Auto tracking is active
+        autoTrackingBtn.disabled = false
+        manualTrackingBtn.disabled = true
+      } else if (window.isManualTracking) {
+        // Manual tracking is active
+        autoTrackingBtn.disabled = true
+        manualTrackingBtn.disabled = false
+      } else {
+        // No tracking active
+        autoTrackingBtn.disabled = false
+        manualTrackingBtn.disabled = false
       }
     }
   
@@ -520,8 +547,21 @@ document.addEventListener("DOMContentLoaded", () => {
     // Updated extractChatData with Chat History Display
     async function extractChatData() {
       try {
-        if (statusText) statusText.textContent = "Extracting chat data..."
-        if (startBtn) startBtn.disabled = true
+        // Set tracking state
+        if (!window.isAutoTracking) {
+          window.isManualTracking = true
+        }
+  
+        // Update button states
+        updateTrackingButtonStates()
+  
+        if (statusText) {
+          if (window.isAutoTracking) {
+            statusText.textContent = "Auto tracking: Extracting chat data..."
+          } else {
+            statusText.textContent = "Manual tracking: Extracting chat data..."
+          }
+        }
   
         // Hide AI response container if it's visible
         if (aiResponseContainer) aiResponseContainer.classList.add("hidden")
@@ -594,11 +634,23 @@ document.addEventListener("DOMContentLoaded", () => {
   
         if (typeof chatData === "string") throw new Error(chatData)
   
-        if (statusText) statusText.textContent = "Chat data extracted successfully!"
+        if (statusText) {
+          if (window.isAutoTracking) {
+            statusText.textContent = "Auto tracking: Chat data extracted successfully!"
+          } else {
+            statusText.textContent = "Chat data extracted successfully!"
+          }
+        }
   
         const unreadChats = chatData.filter((chat) => Number.parseInt(chat.unread_count) > 0)
         if (unreadChats.length > 0) {
-          if (statusText) statusText.textContent = "Processing unread chats..."
+          if (statusText) {
+            if (window.isAutoTracking) {
+              statusText.textContent = "Auto tracking: Processing unread chats..."
+            } else {
+              statusText.textContent = "Processing unread chats..."
+            }
+          }
   
           // Click chats and extract full histories first
           await clickChatElement(tab.id, chatData)
@@ -631,192 +683,147 @@ document.addEventListener("DOMContentLoaded", () => {
             break // Process only the first unread chat for AI response
           }
   
-          if (statusText) statusText.textContent = "Waiting for operator action..."
+          if (statusText) {
+            if (window.isAutoTracking) {
+              statusText.textContent = "Auto tracking: Waiting for operator action..."
+            } else {
+              statusText.textContent = "Waiting for operator action..."
+            }
+          }
+        } else {
+          if (statusText) {
+            if (window.isAutoTracking) {
+              statusText.textContent = "Auto tracking: No unread messages found."
+            } else {
+              statusText.textContent = "No unread messages found."
+            }
+          }
         }
       } catch (error) {
         console.error("Extraction error:", error)
-        if (statusText) statusText.textContent = error.message || "Error extracting chat data"
+        if (statusText) {
+          if (window.isAutoTracking) {
+            statusText.textContent = `Auto tracking error: ${error.message || "Error extracting chat data"}`
+          } else {
+            statusText.textContent = error.message || "Error extracting chat data"
+          }
+        }
         if (responseBox) responseBox.textContent = ""
         if (loadingSpinnerMain) loadingSpinnerMain.classList.add("hidden")
       } finally {
-        if (startBtn) startBtn.disabled = false
-      }
-    }
-  
-    // Carousel Functions
-    window.initCarousel = () => {
-      window.currentSlide = 0
-      window.updateCarousel()
-  
-      if (prevSlideBtn) {
-        prevSlideBtn.addEventListener("click", () => {
-          if (window.currentSlide > 0) {
-            window.currentSlide--
-            window.updateCarousel()
-  
-            // Save state after slide change
-            if (window.stateManager) {
-              window.stateManager.saveState()
-            }
-          }
-        })
-      }
-  
-      if (nextSlideBtn) {
-        nextSlideBtn.addEventListener("click", () => {
-          if (window.currentSlide < 2) {
-            window.currentSlide++
-            window.updateCarousel()
-  
-            // Save state after slide change
-            if (window.stateManager) {
-              window.stateManager.saveState()
-            }
-          }
-        })
-      }
-  
-      if (carouselIndicators) {
-        carouselIndicators.forEach((indicator) => {
-          indicator.addEventListener("click", () => {
-            const index = Number.parseInt(indicator.getAttribute("data-index"))
-            if (!isNaN(index) && index >= 0 && index <= 2) {
-              window.currentSlide = index
-              window.updateCarousel()
-  
-              // Save state after slide change
-              if (window.stateManager) {
-                window.stateManager.saveState()
-              }
-            }
-          })
-        })
-      }
-    }
-  
-    window.updateCarousel = () => {
-      if (carouselTrack) carouselTrack.style.transform = `translateX(-${window.currentSlide * 100}%)`
-      if (prevSlideBtn) prevSlideBtn.disabled = window.currentSlide === 0
-      if (nextSlideBtn) nextSlideBtn.disabled = window.currentSlide === 2
-      if (carouselTitle) {
-        const titles = ["Customer Question (Ukrainian)", "Customer Response", "Operator Response"]
-        carouselTitle.textContent = titles[window.currentSlide]
-      }
-      if (carouselIndicators) {
-        carouselIndicators.forEach((indicator, index) => {
-          indicator.classList.toggle("active", index === window.currentSlide)
-        })
-      }
-    }
-  
-    function renderAIResponse(aiResult) {
-      if (aiResponseContainer) {
-        // Hide chat history container
-        window.toggleChatHistory(false)
-  
-        // Show AI response container
-        aiResponseContainer.classList.remove("hidden")
-  
-        if (customerResponse) customerResponse.textContent = aiResult.customer_response || "No response provided"
-        if (operatorResponse) operatorResponse.textContent = aiResult.operator_response || "No response provided"
-        if (customerQuestionUkrainian)
-          customerQuestionUkrainian.textContent = aiResult.customer_question_ukranian || "No response provided"
-        window.initCarousel()
-  
-        // Save state after rendering AI response
-        if (window.stateManager) {
-          window.stateManager.saveState()
+        // Reset manual tracking state if not in auto tracking mode
+        if (!window.isAutoTracking) {
+          window.isManualTracking = false
         }
+  
+        // Update button states
+        updateTrackingButtonStates()
       }
     }
   
-    function renderChatAIResponse(aiResult) {
-      if (aiResponseContainer2) {
-        aiResponseContainer2.classList.remove("hidden")
+    // Auto tracking functions
+    function startAutoTracking() {
+      if (window.isAutoTracking) return
   
-        // Save state after rendering chat AI response
-        if (window.stateManager) {
-          window.stateManager.saveState()
-        }
+      window.isAutoTracking = true
+  
+      // Disable manual tracking button
+      if (manualTrackingBtn) {
+        manualTrackingBtn.disabled = true
       }
-    }
   
-    // Chat Functions
-    window.addChatMessage = (message, isUser = false, title = "") => {
-      if (!chatHistory) return
-      const messageDiv = document.createElement("div")
-      messageDiv.classList.add("chat-message", isUser ? "user" : "ai")
-      if (!isUser && title) {
-        const titleElement = document.createElement("h4")
-        titleElement.classList.add("message-title")
-        titleElement.textContent = title
-        messageDiv.appendChild(titleElement)
+      if (autoTrackingBtn) {
+        autoTrackingBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="6" width="12" height="12"></rect>
+        </svg>
+        Stop
+      `
+        autoTrackingBtn.classList.add("btn-danger")
       }
-      const messageContent = document.createElement("p")
-      messageContent.textContent = message
-      messageDiv.appendChild(messageContent)
-      chatHistory.appendChild(messageDiv)
-      chatHistory.scrollTop = chatHistory.scrollHeight
   
-      // Save state after adding chat message
+      if (statusText) statusText.textContent = "Auto tracking started..."
+  
+      // Run the first check immediately
+      runAutoTrackingCycle()
+  
+      // Set up interval for continuous checking
+      window.autoTrackingInterval = setInterval(runAutoTrackingCycle, window.autoTrackingDelay)
+  
+      // Save state after starting auto tracking
       if (window.stateManager) {
         window.stateManager.saveState()
       }
     }
   
-    async function handleChatSend() {
-      if (!chatInput || !sendBtn) return
-      const message = chatInput.value.trim()
-      if (!message) return
+    function stopAutoTracking() {
+      if (!window.isAutoTracking) return
   
-      window.addChatMessage(message, true)
-      chatInput.value = ""
+      window.isAutoTracking = false
   
-      // Set loading spinner text for initial generation
-      updateLoadingSpinnerText(loadingSpinner, false)
-      if (loadingSpinner) loadingSpinner.classList.remove("hidden")
+      // Enable manual tracking button
+      if (manualTrackingBtn) {
+        manualTrackingBtn.disabled = false
+      }
   
-      try {
-        const chatData = { message }
-        window.currentChatMessage = chatData
-        const aiResult = await sendToAIAgent(chatData, agentPersona)
-        window.lastChatAIResult = aiResult
+      if (autoTrackingBtn) {
+        autoTrackingBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="10 8 16 12 10 16 10 8"></polygon>
+        </svg>
+        Auto
+      `
+        autoTrackingBtn.classList.remove("btn-danger")
+      }
   
-        if (loadingSpinner) loadingSpinner.classList.add("hidden")
+      if (statusText) statusText.textContent = "Auto tracking stopped"
   
-        window.addChatMessage(
-          aiResult.customer_question_ukranian || "No response from AI",
-          false,
-          "Customer Question Ukrainian",
-        )
-        window.addChatMessage(aiResult.customer_response || "No response from AI", false, "Customer Response")
-        window.addChatMessage(aiResult.operator_response || "No response from AI", false, "Operator Response")
-        renderChatAIResponse(aiResult)
-      } catch (error) {
-        if (loadingSpinner) loadingSpinner.classList.add("hidden")
-        window.addChatMessage("Error: Could not get response from AI", false)
+      // Clear the interval
+      if (window.autoTrackingInterval) {
+        clearInterval(window.autoTrackingInterval)
+        window.autoTrackingInterval = null
+      }
+  
+      // Save state after stopping auto tracking
+      if (window.stateManager) {
+        window.stateManager.saveState()
       }
     }
   
-    // Show clipboard copy notification
-    function showCopyNotification() {
-      const notification = document.createElement("div")
-      notification.className = "copy-notification"
-      notification.textContent = "Response copied to clipboard!"
-      document.body.appendChild(notification)
+    async function runAutoTrackingCycle() {
+      if (!window.isAutoTracking) return
   
-      // Remove notification after 2 seconds
-      setTimeout(() => {
-        notification.classList.add("fade-out")
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification)
-          }
-        }, 500)
-      }, 2000)
+      try {
+        if (statusText) statusText.textContent = "Auto tracking: Checking for unread messages..."
+  
+        await extractChatData()
+  
+        if (statusText && window.isAutoTracking) statusText.textContent = "Auto tracking: Waiting for next check..."
+      } catch (error) {
+        console.error("Auto tracking cycle error:", error)
+        if (statusText) statusText.textContent = `Auto tracking error: ${error.message}`
+      }
     }
   
-    // Event Listeners
+    // Event Listeners for tracking buttons
+    if (autoTrackingBtn) {
+      autoTrackingBtn.addEventListener("click", () => {
+        if (window.isAutoTracking) {
+          stopAutoTracking()
+        } else {
+          startAutoTracking()
+        }
+      })
+    }
+  
+    if (manualTrackingBtn) {
+      manualTrackingBtn.addEventListener("click", () => {
+        // For now, just run the extractChatData function once
+        extractChatData()
+      })
+    }
+  
     if (startBtn) startBtn.addEventListener("click", extractChatData)
   
     if (acceptBtn) {
@@ -968,6 +975,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   
+    // Show clipboard copy notification
+    function showCopyNotification() {
+      const notification = document.createElement("div")
+      notification.className = "copy-notification"
+      notification.textContent = "Response copied to clipboard!"
+      document.body.appendChild(notification)
+  
+      // Remove notification after 2 seconds
+      setTimeout(() => {
+        notification.classList.add("fade-out")
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification)
+          }
+        }, 500)
+      }, 2000)
+    }
+  
     // Initialize page
     if (window.location.href.includes("chat.html")) {
       showPage("chat")
@@ -987,6 +1012,42 @@ document.addEventListener("DOMContentLoaded", () => {
           window.stateManager.applyState(state)
         }
       })
+    }
+  
+    // Initialize button states
+    updateTrackingButtonStates()
+  
+    // Dummy renderAIResponse function
+    function renderAIResponse(aiResult) {
+      if (!aiResult) return
+  
+      if (customerQuestionUkrainian) {
+        customerQuestionUkrainian.textContent = aiResult.customer_question_ukranian || "No response from AI"
+      }
+      if (customerResponse) {
+        customerResponse.textContent = aiResult.customer_response || "No response from AI"
+      }
+      if (operatorResponse) {
+        operatorResponse.textContent = aiResult.operator_response || "No response from AI"
+      }
+  
+      if (aiResponseContainer) {
+        aiResponseContainer.classList.remove("hidden")
+      }
+    }
+  
+    // Dummy renderChatAIResponse function
+    function renderChatAIResponse(aiResult) {
+      if (!aiResult) return
+  
+      if (aiResponseContainer2) {
+        aiResponseContainer2.classList.remove("hidden")
+      }
+    }
+  
+    // Dummy handleChatSend function
+    function handleChatSend() {
+      console.log("Chat message sent!")
     }
   })
   

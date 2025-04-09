@@ -765,3 +765,24 @@
     background-color: var(--accent);
   }
   
+  /* Button Group */
+  .button-group {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .button-group .btn {
+    flex: 1;
+  }
+  
+  /* Tracking Buttons - Smaller size and font */
+  .button-group .btn.tracking-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .button-group .btn.tracking-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
