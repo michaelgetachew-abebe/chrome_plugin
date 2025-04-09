@@ -102,6 +102,9 @@ class StateManager {
           statusText: document.getElementById("status")?.textContent,
           showingAIResponse: !document.getElementById("ai-response-container")?.classList.contains("hidden"),
           currentSlide: window.currentSlide || 0,
+          isAutoTracking: window.isAutoTracking || false,
+          isManualTracking: window.isManualTracking || false,
+          autoTrackingDelay: window.autoTrackingDelay || 120000,
         }
       } else {
         // Test Chat page state
@@ -234,6 +237,54 @@ class StateManager {
             window.updateCarousel()
           }
         }
+      }
+  
+      // Restore tracking states
+      if (autoreplyState.isAutoTracking) {
+        window.isAutoTracking = true
+        const autoTrackingBtn = document.getElementById("auto-tracking-btn")
+        const manualTrackingBtn = document.getElementById("manual-tracking-btn")
+  
+        if (autoTrackingBtn) {
+          autoTrackingBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12"></rect>
+            </svg>
+            Stop
+          `
+          autoTrackingBtn.classList.add("btn-danger")
+        }
+  
+        if (manualTrackingBtn) {
+          manualTrackingBtn.disabled = true
+        }
+  
+        // Restart the auto tracking interval
+        if (typeof window.startAutoTracking === "function") {
+          setTimeout(() => window.startAutoTracking(), 1000)
+        }
+      } else if (autoreplyState.isManualTracking) {
+        window.isManualTracking = true
+        const autoTrackingBtn = document.getElementById("auto-tracking-btn")
+        const manualTrackingBtn = document.getElementById("manual-tracking-btn")
+  
+        if (autoTrackingBtn) {
+          autoTrackingBtn.disabled = true
+        }
+  
+        if (manualTrackingBtn) {
+          manualTrackingBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12"></rect>
+            </svg>
+            Stop
+          `
+          manualTrackingBtn.classList.add("btn-danger")
+        }
+      }
+  
+      if (autoreplyState.autoTrackingDelay) {
+        window.autoTrackingDelay = autoreplyState.autoTrackingDelay
       }
     }
   

@@ -711,9 +711,28 @@ document.addEventListener("DOMContentLoaded", () => {
         if (responseBox) responseBox.textContent = ""
         if (loadingSpinnerMain) loadingSpinnerMain.classList.add("hidden")
       } finally {
-        // Reset manual tracking state if not in auto tracking mode
-        if (!window.isAutoTracking) {
+        // Only reset manual tracking state if it was manually triggered
+        if (window.isManualTracking && !window.isAutoTracking) {
           window.isManualTracking = false
+  
+          if (manualTrackingBtn) {
+            manualTrackingBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Manual
+        `
+            manualTrackingBtn.classList.remove("btn-danger")
+          }
+  
+          if (autoTrackingBtn) {
+            autoTrackingBtn.disabled = false
+          }
+  
+          // Save state after completing manual tracking
+          if (window.stateManager) {
+            window.stateManager.saveState()
+          }
         }
   
         // Update button states
@@ -722,7 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   
     // Auto tracking functions
-    function startAutoTracking() {
+    window.startAutoTracking = () => {
       if (window.isAutoTracking) return
   
       window.isAutoTracking = true
@@ -756,14 +775,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   
-    function stopAutoTracking() {
+    window.stopAutoTracking = () => {
       if (!window.isAutoTracking) return
   
       window.isAutoTracking = false
   
       // Enable manual tracking button
       if (manualTrackingBtn) {
-        manualTrackingBtn.disabled = false
+        manualTrackingBtn.disabled = true
       }
   
       if (autoTrackingBtn) {
@@ -810,17 +829,60 @@ document.addEventListener("DOMContentLoaded", () => {
     if (autoTrackingBtn) {
       autoTrackingBtn.addEventListener("click", () => {
         if (window.isAutoTracking) {
-          stopAutoTracking()
+          window.stopAutoTracking()
         } else {
-          startAutoTracking()
+          window.startAutoTracking()
         }
       })
     }
   
     if (manualTrackingBtn) {
       manualTrackingBtn.addEventListener("click", () => {
-        // For now, just run the extractChatData function once
-        extractChatData()
+        if (window.isManualTracking) {
+          // Stop manual tracking
+          window.isManualTracking = false
+  
+          if (manualTrackingBtn) {
+            manualTrackingBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Manual
+          `
+            manualTrackingBtn.classList.remove("btn-danger")
+          }
+  
+          if (autoTrackingBtn) {
+            autoTrackingBtn.disabled = false
+          }
+  
+          if (statusText) statusText.textContent = "Manual tracking stopped"
+  
+          // Save state after stopping manual tracking
+          if (window.stateManager) {
+            window.stateManager.saveState()
+          }
+        } else {
+          // Start manual tracking
+          window.isManualTracking = true
+  
+          if (manualTrackingBtn) {
+            manualTrackingBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12"></rect>
+            </svg>
+            Stop
+          `
+            manualTrackingBtn.classList.add("btn-danger")
+          }
+  
+          if (autoTrackingBtn) {
+            autoTrackingBtn.disabled = true
+          }
+  
+          // Run the extractChatData function once
+          extractChatData()
+        }
       })
     }
   
