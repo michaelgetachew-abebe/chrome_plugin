@@ -1,0 +1,35 @@
+{
+    "manifest_version": 3,
+    "name": "WhatsApp Helper(beta)",
+    "version": "1.0.0",
+    "description": "WhatsApp Helper your WhatsApp Customer Support Companion!",
+    "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
+    "host_permissions": ["https://n8n.srv768692.hstgr.cloud/webhook-test/trigger"],
+    "action": {
+      "default_popup": "login.html",
+      "default_icon": {
+        "128": "icon-128.png"
+      }
+    },
+    "icons": {
+      "128": "icon-128.png"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "html2canvas.min.js",
+          "socket.io.min.js",
+          "chat.html",
+          "styles.css",
+          "script.js",
+          "auth.js",
+          "login.html",
+          "index.html",
+          "websocket.js",
+          "state-manager.js"
+        ],
+        "matches": ["<all_urls>"]
+      }
+    ]
+  }
+  
