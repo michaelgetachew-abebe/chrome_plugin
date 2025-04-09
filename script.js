@@ -61,18 +61,31 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   
       // Ensure WebSocket connection is established
-      if (window.wsManager && !window.wsManager.isConnected) {
-        window.wsManager.connect(token)
+      if (window.wsManager) {
+        // Only reconnect if not already connected
+        if (!window.wsManager.isConnected) {
+          console.log("Reconnecting WebSocket with saved token")
+          window.wsManager.connect(token)
+        }
   
         // Set up WebSocket event handlers
         window.wsManager.onDisconnect((event) => {
-          // If disconnected with an auth error code, redirect to login
+          // Only redirect to login if it's an authentication error
           if (event.code === 1008) {
+            console.log("Authentication error in WebSocket, redirecting to login")
             localStorage.removeItem("whatsapp_helper_token")
             localStorage.removeItem("whatsapp_helper_agent_id")
             localStorage.removeItem("whatsapp_helper_agent_name")
             localStorage.removeItem("whatsapp_helper_auth")
             window.location.href = "login.html"
+          } else {
+            // For other disconnection reasons, attempt to reconnect
+            console.log("WebSocket disconnected for non-auth reason, attempting reconnect")
+            setTimeout(() => {
+              if (localStorage.getItem("whatsapp_helper_token")) {
+                window.wsManager.connect(localStorage.getItem("whatsapp_helper_token"))
+              }
+            }, 2000)
           }
         })
       }
@@ -143,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.isDarkMode = false
     window.currentSlide = 0
     window.chatHistories = {} // Store chat histories by contact name
+    window.isProcessingAutoTrack = false
   
     // Auto tracking state
     window.isAutoTracking = false
@@ -547,6 +561,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Updated extractChatData with Chat History Display
     async function extractChatData() {
       try {
+        // Set processing flag for auto tracking
+        if (window.isAutoTracking) {
+          window.isProcessingAutoTrack = true
+        }
+  
         // Set tracking state
         if (!window.isAutoTracking) {
           window.isManualTracking = true
@@ -711,6 +730,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (responseBox) responseBox.textContent = ""
         if (loadingSpinnerMain) loadingSpinnerMain.classList.add("hidden")
       } finally {
+        // Clear processing flag for auto tracking
+        if (window.isAutoTracking) {
+          window.isProcessingAutoTrack = false
+        }
+  
         // Only reset manual tracking state if it was manually triggered
         if (window.isManualTracking && !window.isAutoTracking) {
           window.isManualTracking = false
@@ -767,7 +791,22 @@ document.addEventListener("DOMContentLoaded", () => {
       runAutoTrackingCycle()
   
       // Set up interval for continuous checking
-      window.autoTrackingInterval = setInterval(runAutoTrackingCycle, window.autoTrackingDelay)
+      // Clear any existing interval first
+      if (window.autoTrackingInterval) {
+        clearInterval(window.autoTrackingInterval)
+      }
+  
+      window.autoTrackingInterval = setInterval(() => {
+        // Only start a new cycle if the previous one has completed
+        if (!window.isProcessingAutoTrack) {
+          window.isProcessingAutoTrack = true
+          runAutoTrackingCycle().finally(() => {
+            window.isProcessingAutoTrack = false
+          })
+        } else {
+          console.log("Previous auto tracking cycle still running, skipping this cycle")
+        }
+      }, window.autoTrackingDelay)
   
       // Save state after starting auto tracking
       if (window.stateManager) {
@@ -816,9 +855,13 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         if (statusText) statusText.textContent = "Auto tracking: Checking for unread messages..."
   
+        // Call extractChatData and wait for it to complete
         await extractChatData()
   
-        if (statusText && window.isAutoTracking) statusText.textContent = "Auto tracking: Waiting for next check..."
+        // Only update status if we're still in auto tracking mode
+        if (window.isAutoTracking && statusText) {
+          statusText.textContent = "Auto tracking: Waiting for next check..."
+        }
       } catch (error) {
         console.error("Auto tracking cycle error:", error)
         if (statusText) statusText.textContent = `Auto tracking error: ${error.message}`

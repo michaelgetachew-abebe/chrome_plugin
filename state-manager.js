@@ -1,5 +1,10 @@
-// State Manager for WhatsApp Helper Extension
-class StateManager {
+// Check if chrome is defined, if not, define it as an empty object
+if (typeof chrome === "undefined") {
+    var chrome = {}
+  }
+  
+  // State Manager for WhatsApp Helper Extension
+  class StateManager {
     constructor() {
       this.initialized = false
       this.stateKey = "whatsapp_helper_state"
@@ -104,6 +109,7 @@ class StateManager {
           currentSlide: window.currentSlide || 0,
           isAutoTracking: window.isAutoTracking || false,
           isManualTracking: window.isManualTracking || false,
+          isProcessingAutoTrack: window.isProcessingAutoTrack || false,
           autoTrackingDelay: window.autoTrackingDelay || 120000,
         }
       } else {
@@ -242,16 +248,17 @@ class StateManager {
       // Restore tracking states
       if (autoreplyState.isAutoTracking) {
         window.isAutoTracking = true
+        window.isProcessingAutoTrack = false // Reset processing flag
         const autoTrackingBtn = document.getElementById("auto-tracking-btn")
         const manualTrackingBtn = document.getElementById("manual-tracking-btn")
   
         if (autoTrackingBtn) {
           autoTrackingBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="6" y="6" width="12" height="12"></rect>
-            </svg>
-            Stop
-          `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="6" width="12" height="12"></rect>
+          </svg>
+          Stop
+        `
           autoTrackingBtn.classList.add("btn-danger")
         }
   
@@ -261,7 +268,32 @@ class StateManager {
   
         // Restart the auto tracking interval
         if (typeof window.startAutoTracking === "function") {
-          setTimeout(() => window.startAutoTracking(), 1000)
+          // Clear any existing interval first
+          if (window.autoTrackingInterval) {
+            clearInterval(window.autoTrackingInterval)
+            window.autoTrackingInterval = null
+          }
+  
+          // Use a short delay to ensure the UI is fully loaded
+          setTimeout(() => {
+            if (window.isAutoTracking) {
+              // Double-check that auto tracking is still enabled
+              console.log("Restarting auto tracking from saved state")
+              // Set up the interval without running immediately
+              window.autoTrackingInterval = setInterval(() => {
+                if (!window.isProcessingAutoTrack) {
+                  window.isProcessingAutoTrack = true
+                  if (typeof window.runAutoTrackingCycle === "function") {
+                    window.runAutoTrackingCycle().finally(() => {
+                      window.isProcessingAutoTrack = false
+                    })
+                  } else {
+                    window.isProcessingAutoTrack = false
+                  }
+                }
+              }, window.autoTrackingDelay || 120000)
+            }
+          }, 2000)
         }
       } else if (autoreplyState.isManualTracking) {
         window.isManualTracking = true
@@ -274,11 +306,11 @@ class StateManager {
   
         if (manualTrackingBtn) {
           manualTrackingBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="6" y="6" width="12" height="12"></rect>
-            </svg>
-            Stop
-          `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="6" width="12" height="12"></rect>
+          </svg>
+          Stop
+        `
           manualTrackingBtn.classList.add("btn-danger")
         }
       }

@@ -24,6 +24,8 @@ class WebSocketManager {
           this.socket.close()
         }
   
+        console.log("Establishing WebSocket connection with token")
+  
         // Create new WebSocket connection with token
         this.socket = new WebSocket(`ws://localhost:8000/ws?token=${token}`)
   
@@ -76,9 +78,16 @@ class WebSocketManager {
       // Notify all disconnection callbacks
       this.disconnectionCallbacks.forEach((callback) => callback(event))
   
-      // Attempt to reconnect if not a normal closure and we haven't exceeded max attempts
-      if (event.code !== 1000 && event.code !== 1001 && this.reconnectAttempts < this.maxReconnectAttempts) {
+      // Attempt to reconnect if not a normal closure, not an auth error, and we haven't exceeded max attempts
+      if (
+        event.code !== 1000 &&
+        event.code !== 1001 &&
+        event.code !== 1008 &&
+        this.reconnectAttempts < this.maxReconnectAttempts
+      ) {
         this.attemptReconnect()
+      } else if (event.code === 1008) {
+        console.log("Authentication error detected, not attempting reconnect")
       }
     }
   
@@ -99,6 +108,7 @@ class WebSocketManager {
       setTimeout(() => {
         const token = localStorage.getItem("whatsapp_helper_token")
         if (token) {
+          console.log("Reconnecting with stored token")
           this.connect(token)
         } else {
           console.error("No token available for reconnection")

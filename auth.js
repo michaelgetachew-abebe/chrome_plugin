@@ -18,25 +18,39 @@ document.addEventListener("DOMContentLoaded", () => {
     function checkAuthStatus() {
       const token = localStorage.getItem("whatsapp_helper_token")
       if (token) {
+        console.log("Found existing auth token, verifying...")
+  
         // Verify token validity by trying to establish WebSocket connection
-        if (window.wsManager && window.wsManager.connect(token)) {
+        if (window.wsManager) {
+          // Only connect if not already connected
+          if (!window.wsManager.isConnected) {
+            window.wsManager.connect(token)
+          }
+  
           window.wsManager.onConnect(() => {
+            console.log("WebSocket connection successful, token is valid")
             redirectToMainPage()
           })
   
           window.wsManager.onDisconnect((event) => {
             // If disconnected with an auth error code, clear token and show login
             if (event.code === 1008) {
+              console.log("Authentication error in WebSocket, clearing token")
               localStorage.removeItem("whatsapp_helper_token")
               localStorage.removeItem("whatsapp_helper_agent_id")
               localStorage.removeItem("whatsapp_helper_agent_name")
               localStorage.removeItem("whatsapp_helper_auth")
               showError("Session expired. Please login again.")
+            } else {
+              // For other disconnection reasons, still try to redirect
+              // The script.js will handle reconnection if needed
+              console.log("WebSocket disconnected for non-auth reason, still redirecting")
+              redirectToMainPage()
             }
           })
         } else {
-          // If WebSocket connection fails, try to redirect anyway
-          // The script.js will handle redirecting back if needed
+          // If WebSocket manager is not available, try to redirect anyway
+          console.log("WebSocket manager not available, redirecting based on token presence")
           redirectToMainPage()
         }
       }
@@ -74,6 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!response.ok) {
           throw new Error(data.detail || "Login failed")
         }
+  
+        console.log("Login successful, storing authentication data")
   
         // Store authentication data
         localStorage.setItem("whatsapp_helper_token", data.token)
