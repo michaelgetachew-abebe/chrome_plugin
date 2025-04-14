@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
         console.log("Sending payload to AI Agent:", payload)
   
-        const apiResponse = await fetch("https://n8n.srv768692.hstgr.cloud/webhook-test/trigger", {
+        const apiResponse = await fetch("https://n8n.srv768692.hstgr.cloud/webhook/trigger", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
