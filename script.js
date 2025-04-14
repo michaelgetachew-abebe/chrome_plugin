@@ -312,6 +312,68 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   
+    // Add carousel initialization and navigation functions after the updateTrackingButtonStates function
+  
+    // Add this function to initialize the carousel
+    window.initCarousel = () => {
+      window.currentSlide = 0
+      updateCarousel()
+  
+      // Add event listeners for carousel navigation
+      if (prevSlideBtn) {
+        prevSlideBtn.addEventListener("click", () => {
+          if (window.currentSlide > 0) {
+            window.currentSlide--
+            updateCarousel()
+          }
+        })
+      }
+  
+      if (nextSlideBtn) {
+        nextSlideBtn.addEventListener("click", () => {
+          if (window.currentSlide < 2) {
+            window.currentSlide++
+            updateCarousel()
+          }
+        })
+      }
+  
+      if (carouselIndicators) {
+        carouselIndicators.forEach((indicator, index) => {
+          indicator.addEventListener("click", () => {
+            window.currentSlide = index
+            updateCarousel()
+          })
+        })
+      }
+    }
+  
+    // Add this function to update carousel position and state
+    function updateCarousel() {
+      if (!carouselTrack) return
+  
+      carouselTrack.style.transform = `translateX(-${window.currentSlide * 100}%)`
+  
+      if (prevSlideBtn) {
+        prevSlideBtn.disabled = window.currentSlide === 0
+      }
+  
+      if (nextSlideBtn) {
+        nextSlideBtn.disabled = window.currentSlide === 2
+      }
+  
+      if (carouselTitle) {
+        const titles = ["Customer Question (Ukrainian)", "Customer Response", "Operator Response"]
+        carouselTitle.textContent = titles[window.currentSlide]
+      }
+  
+      if (carouselIndicators) {
+        carouselIndicators.forEach((indicator, index) => {
+          indicator.classList.toggle("active", index === window.currentSlide)
+        })
+      }
+    }
+  
     // Show/hide chat history container
     window.toggleChatHistory = (show) => {
       if (responseBox) {
@@ -741,11 +803,11 @@ document.addEventListener("DOMContentLoaded", () => {
   
           if (manualTrackingBtn) {
             manualTrackingBtn.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          Manual
-        `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Manual
+          `
             manualTrackingBtn.classList.remove("btn-danger")
           }
   
@@ -777,11 +839,11 @@ document.addEventListener("DOMContentLoaded", () => {
   
       if (autoTrackingBtn) {
         autoTrackingBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="6" y="6" width="12" height="12"></rect>
-        </svg>
-        Stop
-      `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="6" width="12" height="12"></rect>
+          </svg>
+          Stop
+        `
         autoTrackingBtn.classList.add("btn-danger")
       }
   
@@ -826,12 +888,12 @@ document.addEventListener("DOMContentLoaded", () => {
   
       if (autoTrackingBtn) {
         autoTrackingBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polygon points="10 8 16 12 10 16 10 8"></polygon>
-        </svg>
-        Auto
-      `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+          </svg>
+          Auto
+        `
         autoTrackingBtn.classList.remove("btn-danger")
       }
   
@@ -887,11 +949,11 @@ document.addEventListener("DOMContentLoaded", () => {
   
           if (manualTrackingBtn) {
             manualTrackingBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            Manual
-          `
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Manual
+            `
             manualTrackingBtn.classList.remove("btn-danger")
           }
   
@@ -911,11 +973,11 @@ document.addEventListener("DOMContentLoaded", () => {
   
           if (manualTrackingBtn) {
             manualTrackingBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="6" y="6" width="12" height="12"></rect>
-            </svg>
-            Stop
-          `
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="6" width="12" height="12"></rect>
+              </svg>
+              Stop
+            `
             manualTrackingBtn.classList.add("btn-danger")
           }
   
@@ -1122,10 +1184,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize button states
     updateTrackingButtonStates()
   
-    // Dummy renderAIResponse function
+    // Replace the renderAIResponse function with this improved version
     function renderAIResponse(aiResult) {
       if (!aiResult) return
   
+      // Hide chat history container
+      window.toggleChatHistory(false)
+  
+      // Populate response data
       if (customerQuestionUkrainian) {
         customerQuestionUkrainian.textContent = aiResult.customer_question_ukranian || "No response from AI"
       }
@@ -1136,8 +1202,21 @@ document.addEventListener("DOMContentLoaded", () => {
         operatorResponse.textContent = aiResult.operator_response || "No response from AI"
       }
   
+      // Show AI response container
       if (aiResponseContainer) {
         aiResponseContainer.classList.remove("hidden")
+  
+        // Ensure container has proper height to avoid scrolling
+        aiResponseContainer.style.height = "auto"
+        aiResponseContainer.style.maxHeight = "450px"
+      }
+  
+      // Initialize carousel with proper event listeners
+      window.initCarousel()
+  
+      // Save state after rendering AI response
+      if (window.stateManager) {
+        window.stateManager.saveState()
       }
     }
   

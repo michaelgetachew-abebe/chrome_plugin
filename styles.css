@@ -264,15 +264,15 @@
   
   /* Ensure the response items can grow to fit their content */
   .response-item {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     padding: 12px;
     background-color: var(--muted);
     border-radius: var(--radius);
     min-height: 80px;
-    max-height: 180px; /* Increased from 150px to 180px */
+    max-height: 160px; /* Reduce max height to fit better */
     height: auto;
-    overflow-y: auto;
-    width: 100%; /* Ensure it takes full width of its container */
+    overflow-y: auto; /* Allow scrolling within each response item if needed */
+    width: 100%;
   }
   
   /* Update the response item styles */
@@ -298,11 +298,11 @@
   /* Carousel Styles */
   .carousel-container {
     position: relative;
-    overflow-y: auto;
+    overflow: hidden; /* Change from overflow-y: auto to overflow: hidden */
     margin-bottom: 12px;
     flex: 1;
-    min-height: 200px; /* Increased from 180px */
-    max-height: 200px; /* Increased from 180px */
+    min-height: 200px;
+    max-height: 200px;
   }
   
   .carousel-track {
@@ -310,6 +310,7 @@
     transition: transform 0.3s ease;
     min-height: 180px;
     height: auto;
+    width: 300%; /* Set width to accommodate all slides */
   }
   
   /* Adjust the carousel slide to ensure content is fully visible */
@@ -317,8 +318,8 @@
     min-width: 100%;
     flex: 0 0 100%;
     height: auto;
-    min-height: 200px; /* Increased from 180px */
-    padding-bottom: 20px; /* Add padding at the bottom */
+    min-height: 180px;
+    padding-bottom: 10px; /* Reduce padding at the bottom */
   }
   
   .carousel-navigation {
@@ -388,10 +389,10 @@
   
   /* Add this new class for the button container */
   .button-container-fixed {
-    position: relative; /* Change from sticky to relative */
+    position: relative;
     background-color: var(--card);
-    padding-top: 12px;
-    margin-top: auto; /* Push to bottom of flex container */
+    padding-top: 8px;
+    margin-top: auto;
     border-top: 1px solid var(--border);
     z-index: 10;
   }
@@ -636,7 +637,10 @@
   /* Adjust AI response container to take full space when chat history is hidden */
   .ai-response-container {
     height: auto;
-    max-height: 450px; /* Increased max height when it's the only element shown */
+    max-height: 450px;
+    overflow: hidden; /* Prevent container from scrolling */
+    display: flex;
+    flex-direction: column;
   }
   
   /* Make the carousel container larger when it's the only element shown */
