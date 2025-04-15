@@ -363,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   
       if (carouselTitle) {
-        const titles = ["Customer Question (Ukrainian)", "Customer Response", "Operator Response"]
+        const titles = ["Customer Question (Ukrainian)", "Customer Response", "Operator Response"] // Customer Question (Ukrainian), AI Proposed Response, Customer Proposed Response
         carouselTitle.textContent = titles[window.currentSlide]
       }
   
@@ -619,7 +619,70 @@ document.addEventListener("DOMContentLoaded", () => {
         return { error: error.message }
       }
     }
-  
+
+    async function extractSelectedChatData(tabId) {
+      return new Promise((resolve, reject) => {
+        chrome.scripting.executeScript(
+          {
+            target: { tabId: tabId },
+            func: () => {
+              // Find the selected chat element
+              const selectedChatElement = document.querySelector('div[aria-selected="true"]');
+              if (!selectedChatElement) return "No chat selected!";
+    
+              // Extract text content from the selected chat element
+              const chatText = selectedChatElement.innerText.trim();
+              const chatParts = chatText.split("\n");
+    
+              // Parse the text into components
+              const contact_name = chatParts[0] || "Unknown";
+              const recent_timestamp = chatParts[1] || "";
+              const message = chatParts[2] || "";
+              const other_details = chatParts.slice(3).join(" ") || "";
+    
+              // Check for unread message badge based on document language
+              const unreadBadge = selectedChatElement.querySelector(
+                document.documentElement.lang === "en"
+                  ? 'span[aria-label*="unread"]'
+                  : 'span[aria-label*="непрочитанное"]'
+              );
+    
+              let unread_count = "0";
+              if (unreadBadge) {
+                const label = unreadBadge.getAttribute("aria-label");
+                const match = label.match(/^\d+/);
+                unread_count = match ? match[0] : unreadBadge.innerText.trim();
+              }
+    
+              // Construct the chat data object
+              const chatData = {
+                contact_name,
+                recent_timestamp,
+                message,
+                other_details,
+                unread_count
+              };
+    
+              return chatData;
+            }
+          },
+          (injectionResults) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              const result = injectionResults[0].result;
+              if (typeof result === "string") {
+                reject(new Error(result));
+              } else {
+                resolve(result);
+              }
+            }
+          }
+        );
+      });
+    }
+
+
     // Updated extractChatData with Chat History Display
     async function extractChatData() {
       try {
@@ -693,6 +756,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     const match = label.match(/^\d+/)
                     unread_count = match ? match[0] : unreadBadge.innerText.trim()
                   }
+
+                  
   
                   chatData.push({
                     index,
@@ -776,7 +841,20 @@ document.addEventListener("DOMContentLoaded", () => {
             if (window.isAutoTracking) {
               statusText.textContent = "Auto tracking: No unread messages found."
             } else {
-              statusText.textContent = "No unread messages found."
+              setTimeout(statusText.textContent = "No unread messages found.", 2000);
+              statusText.textContent = "Extracting Data From Selected Element ..."
+              const chatData = await extractSelectedChatData(tab.id)
+
+              console.log(chatData);
+
+              updateLoadingSpinnerText(loadingSpinnerMain, false)
+            if (loadingSpinnerMain) loadingSpinnerMain.classList.remove("hidden")
+  
+            const aiResult = await sendToAIAgent(chatData, agentPersona)
+  
+            if (loadingSpinnerMain) loadingSpinnerMain.classList.add("hidden")
+
+              renderAIResponse(aiResult)
             }
           }
         }
@@ -1158,8 +1236,8 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }, 500)
       }, 2000)
-    }
-  
+    } 
+
     // Initialize page
     if (window.location.href.includes("chat.html")) {
       showPage("chat")
@@ -1234,4 +1312,4 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Chat message sent!")
     }
   })
-  
+

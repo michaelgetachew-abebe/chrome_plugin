@@ -27,7 +27,7 @@ class WebSocketManager {
         console.log("Establishing WebSocket connection with token")
   
         // Create new WebSocket connection with token
-        this.socket = new WebSocket(`ws://localhost:8000/ws?token=${token}`)
+        this.socket = new WebSocket(`wss://api.srv768692.hstgr.cloud/ws?token=${token}`)
   
         // Set up event handlers
         this.socket.onopen = () => this.handleOpen()
